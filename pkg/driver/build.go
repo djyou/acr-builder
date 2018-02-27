@@ -32,7 +32,7 @@ func (b *Builder) Run(buildNumber, composeFile, composeProjectDir,
 	dockerUser, dockerPW, dockerRegistry,
 	workingDir,
 	gitURL, gitBranch, gitHeadRev, gitPATokenUser, gitPAToken, gitXToken,
-	webArchive string,
+	dockerContextURL string,
 	buildEnvs, buildArgs []string, push bool,
 ) (dependencies []build.ImageDependencies, duration time.Duration, err error) {
 	startTime := time.Now()
@@ -51,13 +51,19 @@ func (b *Builder) Run(buildNumber, composeFile, composeProjectDir,
 	}
 
 	var request *build.Request
-	request, err = b.createBuildRequest(composeFile, composeProjectDir,
-		dockerfile, dockerImage, dockerContextDir,
-		dockerUser, dockerPW, dockerRegistry,
-		workingDir,
-		gitURL, gitBranch, gitHeadRev, gitPATokenUser, gitPAToken, gitXToken,
-		webArchive,
-		buildArgs, push)
+
+	if dockerContextURL != "" {
+		request, err = b.createBuildRequest(dockerfile, dockerImage, dockerContextURL,
+			dockerUser, dockerPW, dockerRegistry,
+			buildArgs, push)
+	} else {
+		request, err = b.createBuildRequestWithLocalSource(composeFile, composeProjectDir,
+			dockerfile, dockerImage, dockerContextDir,
+			dockerUser, dockerPW, dockerRegistry,
+			workingDir,
+			gitURL, gitBranch, gitHeadRev, gitPATokenUser, gitPAToken, gitXToken,
+			buildArgs, push)
+	}
 
 	if err != nil {
 		return
@@ -71,12 +77,8 @@ func (b *Builder) Run(buildNumber, composeFile, composeProjectDir,
 	return
 }
 
-func (b *Builder) createBuildRequest(composeFile, composeProjectDir,
-	dockerfile, dockerImage, dockerContextDir,
-	dockerUser, dockerPW, dockerRegistry,
-	workingDir,
-	gitURL, gitBranch, gitHeadRev, gitPATokenUser, gitPAToken, gitXToken,
-	webArchive string,
+func (b *Builder) createBuildRequest(dockerfile, dockerImage, dockerContextURL,
+	dockerUser, dockerPW, dockerRegistry string,
 	buildArgs []string, push bool) (*build.Request, error) {
 	if push && dockerRegistry == "" {
 		return nil, fmt.Errorf("Docker registry is needed for push, use --%s or environment variable %s to provide its value",
@@ -103,7 +105,52 @@ func (b *Builder) createBuildRequest(composeFile, composeProjectDir,
 		dockerCreds = append(dockerCreds, cred)
 	}
 
-	source, err := getSource(workingDir, gitURL, gitBranch, gitHeadRev, gitXToken, gitPATokenUser, gitPAToken, webArchive)
+	target := commands.NewDockerBuild(dockerfile, dockerContextURL, buildArgs, registrySuffixed, dockerImage)
+
+	return &build.Request{
+		DockerRegistry:    registrySuffixed,
+		DockerCredentials: dockerCreds,
+		Targets: []build.SourceTarget{
+			{
+				Source: commands.NewDummySource(),
+				Builds: []build.Target{target},
+			},
+		},
+	}, nil
+}
+
+func (b *Builder) createBuildRequestWithLocalSource(composeFile, composeProjectDir,
+	dockerfile, dockerImage, dockerContextDir,
+	dockerUser, dockerPW, dockerRegistry,
+	workingDir,
+	gitURL, gitBranch, gitHeadRev, gitPATokenUser, gitPAToken, gitXToken string,
+	buildArgs []string, push bool) (*build.Request, error) {
+	if push && dockerRegistry == "" {
+		return nil, fmt.Errorf("Docker registry is needed for push, use --%s or environment variable %s to provide its value",
+			constants.ArgNameDockerRegistry, constants.ExportsDockerRegistry)
+	}
+
+	var registrySuffixed, registryNoSuffix string
+	if dockerRegistry != "" {
+		if strings.HasSuffix(dockerRegistry, "/") {
+			registrySuffixed = dockerRegistry
+			registryNoSuffix = dockerRegistry[:len(dockerRegistry)-1]
+		} else {
+			registrySuffixed = dockerRegistry + "/"
+			registryNoSuffix = dockerRegistry
+		}
+	}
+
+	dockerCreds := []build.DockerCredential{}
+	if dockerUser != "" {
+		cred, err := commands.NewDockerUsernamePassword(registryNoSuffix, dockerUser, dockerPW)
+		if err != nil {
+			return nil, err
+		}
+		dockerCreds = append(dockerCreds, cred)
+	}
+
+	source, err := getSource(workingDir, gitURL, gitBranch, gitHeadRev, gitXToken, gitPATokenUser, gitPAToken)
 	if err != nil {
 		return nil, err
 	}

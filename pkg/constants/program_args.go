@@ -25,8 +25,8 @@ const (
 	// ArgNameGitXToken is the parameter name for github x-oath-basic token
 	ArgNameGitXToken = "git-x-token"
 
-	// ArgNameWebArchive is the parameter name for web archives
-	ArgNameWebArchive = "archive"
+	// ArgNameDockerContextURL is the parameter name for docker context url
+	ArgNameDockerContextURL = "docker-context-url"
 
 	// ArgNameDockerfile is the parameter name for dockerfile
 	ArgNameDockerfile = "docker-file"

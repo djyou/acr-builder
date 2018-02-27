@@ -12,9 +12,6 @@ const (
 	// DefaultDockerfile is the name of the default dockerfile
 	DefaultDockerfile = "Dockerfile"
 
-	// SourceNameWebArchive is the name of the web archive source
-	SourceNameWebArchive = "web archive"
-
 	// SourceNameGit is the name of the git source
 	SourceNameGit = "git repository"
 

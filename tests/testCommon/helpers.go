@@ -129,6 +129,9 @@ var DotnetExampleDependencies = *NewImageDependencies(
 	[]string{"microsoft/aspnetcore-build:2.0", "imaginary/cert-generator:1.0"},
 )
 
+// DotnetExampleWithoutDependencies links to the project in ${workspaceRoot}/tests/resources/docker-dotnet
+var DotnetExampleWithoutDependencies = *EmptyImageDependencies(DotnetExampleFullImageName)
+
 // AssertSameEnv asserts two sets environment variable are the same
 func AssertSameEnv(t *testing.T, expected, actual []build.EnvVar) {
 	assert.Equal(t, len(expected), len(actual))
@@ -154,6 +157,15 @@ func ReportOnError(t *testing.T, f func() error) {
 // NewImageDependencies creates a image dependency object
 func NewImageDependencies(image string, runtime string, buildtimes []string) *build.ImageDependencies {
 	dep, err := build.NewImageDependencies(EmptyContext, image, runtime, buildtimes)
+	if err != nil {
+		panic(err)
+	}
+	return dep
+}
+
+// EmptyImageDependencies creates a image dependency object without dependency
+func EmptyImageDependencies(image string) *build.ImageDependencies {
+	dep, err := build.EmptyImageDependencies(EmptyContext, image)
 	if err != nil {
 		panic(err)
 	}

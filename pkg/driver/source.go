@@ -7,22 +7,10 @@ import (
 )
 
 func getSource(workingDir,
-	gitURL, gitBranch, gitHeadRev, gitXToken, gitPATokenUser, gitPAToken,
-	webArchive string) (source build.Source, err error) {
+	gitURL, gitBranch, gitHeadRev, gitXToken, gitPATokenUser,
+	gitPAToken string) (source build.Source, err error) {
 
-	var webArchiveFactory, gitFactory, localFactory, selected *factory
-	webArchiveFactory, err = newFactory(constants.SourceNameWebArchive,
-		func() (build.Source, error) {
-			return commands.NewArchiveSource(webArchive, workingDir), nil
-		},
-		[]parameter{
-			{name: constants.ArgNameWebArchive, value: webArchive},
-		},
-		nil,
-	)
-	if err != nil {
-		return
-	}
+	var gitFactory, localFactory, selected *factory
 
 	gitFactory, err = newFactory(constants.SourceNameGit,
 		func() (build.Source, error) {
@@ -61,7 +49,7 @@ func getSource(workingDir,
 		return
 	}
 
-	selected, err = decide("sources", localFactory, gitFactory, webArchiveFactory)
+	selected, err = decide("sources", localFactory, gitFactory)
 	if err != nil {
 		return
 	}

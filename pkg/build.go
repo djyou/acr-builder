@@ -118,6 +118,18 @@ func NewImageDependencies(env *BuilderContext, image string, runtime string, bui
 	return dependencies, nil
 }
 
+// EmptyImageDependencies creates ImageDependencies without runtime and buildtime
+func EmptyImageDependencies(env *BuilderContext, image string) (*ImageDependencies, error) {
+	image = env.Expand(image)
+	imageReference, err := NewImageReference(image)
+	if err != nil {
+		return nil, err
+	}
+	return &ImageDependencies{
+		Image: imageReference,
+	}, nil
+}
+
 // DockerCredential denote how to authenticate to a docker registry
 type DockerCredential interface {
 	Authenticate(runner Runner) error

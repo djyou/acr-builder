@@ -398,7 +398,6 @@ type createBuildRequestTestCase struct {
 	gitPATokenUser    string
 	gitPAToken        string
 	gitXToken         string
-	webArchive        string
 	buildArgs         []string
 	push              bool
 	files             test.FileSystemExpectations
@@ -564,12 +563,12 @@ func testCreateBuildRequest(t *testing.T, tc createBuildRequestTestCase) {
 	fs.PrepareFileSystem(tc.files)
 	defer fs.AssertExpectations(t)
 	builder := NewBuilder(runner)
-	req, err := builder.createBuildRequest(tc.composeFile, tc.composeProjectDir,
+	req, err := builder.createBuildRequestWithLocalSource(tc.composeFile, tc.composeProjectDir,
 		tc.dockerfile, tc.dockerImage, tc.dockerContextDir,
 		tc.dockerUser, tc.dockerPW, tc.dockerRegistry, tc.workingDir,
 		tc.gitURL, tc.gitBranch, tc.gitHeadRev,
 		tc.gitPATokenUser, tc.gitPAToken, tc.gitXToken,
-		tc.webArchive, tc.buildArgs, tc.push)
+		tc.buildArgs, tc.push)
 
 	if tc.expectedError != "" {
 		assert.NotNil(t, err)
@@ -597,7 +596,7 @@ type runTestCase struct {
 	gitPATokenUser       string
 	gitPAToken           string
 	gitXToken            string
-	webArchive           string
+	dockerContextURL     string
 	buildEnvs            []string
 	buildArgs            []string
 	push                 bool
@@ -684,7 +683,7 @@ func testRun(t *testing.T, tc runTestCase) {
 		tc.dockerUser, tc.dockerPW, tc.dockerRegistry,
 		tc.workingDir, tc.gitURL, tc.gitBranch, tc.gitHeadRev,
 		tc.gitPATokenUser, tc.gitPAToken, tc.gitXToken,
-		tc.webArchive, tc.buildEnvs, tc.buildArgs, tc.push)
+		tc.dockerContextURL, tc.buildEnvs, tc.buildArgs, tc.push)
 	actualDuration := time.Since(startTime)
 	assert.True(t, actualDuration >= duration)
 	assert.True(t, duration+time.Millisecond >= actualDuration)

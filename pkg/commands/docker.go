@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -68,11 +69,21 @@ func (t *dockerBuildTask) ScanForDependencies(runner build.Runner) ([]build.Imag
 	} else {
 		dockerfile = env.Expand(t.dockerfile)
 	}
-	runtime, buildtime, err := grok.ResolveDockerfileDependencies(dockerfile)
-	if err != nil {
-		return nil, err
+
+	// if the docker file exists on local, resolve dependencies
+	if _, err := os.Stat(dockerfile); err == nil {
+		runtime, buildtime, err := grok.ResolveDockerfileDependencies(dockerfile)
+		if err != nil {
+			return nil, err
+		}
+		dep, err := build.NewImageDependencies(env, t.pushTo, runtime, buildtime)
+		if err != nil {
+			return nil, err
+		}
+		return []build.ImageDependencies{*dep}, err
 	}
-	dep, err := build.NewImageDependencies(env, t.pushTo, runtime, buildtime)
+
+	dep, err := build.EmptyImageDependencies(env, t.pushTo)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +142,14 @@ func PopulateDigests(runner build.Runner, dependencies []build.ImageDependencies
 		if err := queryDigest(runner, entry.Image); err != nil {
 			return err
 		}
-		if err := queryDigest(runner, entry.Runtime); err != nil {
-			return err
+
+		// HACK: runtime may be not available if passing DockerContextURL to docker directly.
+		if entry.Runtime != nil {
+			if err := queryDigest(runner, entry.Runtime); err != nil {
+				return err
+			}
 		}
+
 		for _, buildtime := range entry.Buildtime {
 			if err := queryDigest(runner, buildtime); err != nil {
 				return err

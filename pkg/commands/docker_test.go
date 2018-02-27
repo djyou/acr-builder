@@ -149,18 +149,19 @@ func TestDockerPushHappy(t *testing.T) {
 
 type dockerDependenciesTestCase struct {
 	path        string
-	expectedErr string
+	expectedErr bool
 }
 
 func TestDockerScanDependenciesHappy(t *testing.T) {
 	testDockerScanDependencies(t, dockerDependenciesTestCase{
-		path: filepath.Join("$project_root", "Dockerfile"),
+		path:        filepath.Join("$project_root", "Dockerfile"),
+		expectedErr: false,
 	})
 }
 
 func TestDockerScanDependenciesError(t *testing.T) {
 	testDockerScanDependencies(t, dockerDependenciesTestCase{
-		expectedErr: "^Error opening dockerfile Dockerfile",
+		expectedErr: true,
 	})
 }
 
@@ -172,12 +173,12 @@ func testDockerScanDependencies(t *testing.T, tc dockerDependenciesTestCase) {
 	}, []build.EnvVar{}))
 	target := NewDockerBuild(tc.path, "", []string{}, testCommon.DotnetExampleTargetRegistryName+"/", testCommon.DotnetExampleTargetImageName)
 	dependencies, err := target.ScanForDependencies(runner)
-	if tc.expectedErr == "" {
+	if !tc.expectedErr {
 		assert.Nil(t, err)
 		testCommon.AssertSameDependencies(t, []build.ImageDependencies{testCommon.DotnetExampleDependencies}, dependencies)
 	} else {
-		assert.NotNil(t, err)
-		assert.Regexp(t, regexp.MustCompile(tc.expectedErr), err.Error())
+		assert.Nil(t, err)
+		testCommon.AssertSameDependencies(t, []build.ImageDependencies{testCommon.DotnetExampleWithoutDependencies}, dependencies)
 	}
 }
 

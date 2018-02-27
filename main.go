@@ -30,7 +30,7 @@ func main() {
 	var dockerfile, dockerImage, dockerContextDir string
 	var workingDir string
 	var gitURL, gitBranch, gitHeadRev, gitPATokenUser, gitPAToken, gitXToken string
-	var webArchive string
+	var dockerContextURL string
 	// Untested code paths:
 	// required unless the host is properly logged in
 	// if the program is launched in docker container, use option -v /var/run/docker.sock:/var/run/docker.sock -v ~/.docker:/root/.docker
@@ -46,7 +46,7 @@ func main() {
 	flag.StringVar(&gitPATokenUser, constants.ArgNameGitPATokenUser, "", "Git username for the personal access token.")
 	flag.StringVar(&gitPAToken, constants.ArgNameGitPAToken, "", "Git personal access token.")
 	flag.StringVar(&gitXToken, constants.ArgNameGitXToken, "", "Git OAuth x access token.")
-	flag.StringVar(&webArchive, constants.ArgNameWebArchive, "", "Archive file of the source. Must be a web-url and in tar.gz format")
+	flag.StringVar(&dockerContextURL, constants.ArgNameDockerContextURL, "", "Docker context url. It can be a url for a git repository or a remote tarball file. See the details from https://docs.docker.com/engine/reference/commandline/build/#extended-description")
 	flag.StringVar(&composeFile, constants.ArgNameDockerComposeFile, "", "Path to the docker-compose file.")
 	flag.StringVar(&composeProjectDir, constants.ArgNameDockerComposeProjectDir, "", "The --project-directory parameter for docker-compose. The default is where the compose file is")
 	flag.StringVar(&dockerfile, constants.ArgNameDockerfile, "", "Dockerfile to build. If choosing to build a dockerfile")
@@ -72,7 +72,7 @@ func main() {
 		dockerUser, dockerPW, dockerRegistry,
 		workingDir,
 		gitURL, gitBranch, gitHeadRev, gitPATokenUser, gitPAToken, gitXToken,
-		webArchive,
+		dockerContextURL,
 		buildEnvs, buildArgs, push)
 
 	if err != nil {
